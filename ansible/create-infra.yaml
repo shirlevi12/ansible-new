@@ -1,0 +1,61 @@
+---
+- name: setup web server
+  hosts: app
+  become: true
+  gather_facts: true
+  vars_files:
+    - group_vars/env
+    - group_vars/colman.env
+    - group_vars/docker.env
+  tasks:
+    - name: install epel-release package
+      yum:
+        name:
+          - epel-release
+        state: present
+
+    - name: install git
+      yum:
+        name: git
+        state: present
+
+    - name: install python-pip
+      yum:
+        name: python-pip
+        state: present
+
+    - name: install yum-utils
+      yum:
+        name: yum-utils
+        state: present
+
+    - name: add Docker
+      ansible.builtin.shell:
+        cmd: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: install docker
+      yum:
+        name:
+          - docker-ce
+          - docker-ce-cil
+          - container.io
+          - docker-compose
+        state: present
+
+    - name: start docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Set authorized key taken from file
+      ansible.posix.authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', '/home/ec2-user/ansible-new/ansible/shirs_key_test.pem') }}"
+        
+    - name: clone app repo
+      git:
+        repo: 'https://github.com/shirlevi12/ansible-new.git'
+        dest: /home/ec2-user
+
